@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Environment Variables (IMPORTANT - never upload this)
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Uploads
+uploads/
