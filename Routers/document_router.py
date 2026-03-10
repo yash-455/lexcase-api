@@ -17,7 +17,7 @@ async def upload_new_document(
 
 
 # GET /documents?search=&case_id=
-@router.get("/get")
+@router.get("/get") 
 async def search_documents(
     search: Optional[str] = None,
     case_id: Optional[str] = None

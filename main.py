@@ -4,6 +4,7 @@ from Routers.case_router import router as case_router
 from Routers.user_router import router as user_router  
 from Routers.client_router import router as client_router
 from Routers.document_router import router as document_router
+from Routers.hearing_router import router as hearing_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from Utils.jwt_handler import verify_access_token
@@ -23,6 +24,7 @@ app.include_router(case_router, prefix="/api/v1")
 app.include_router(user_router, prefix="/api/v1")
 app.include_router(client_router, prefix="/api/v1")
 app.include_router(document_router, prefix="/api/v1")
+app.include_router(hearing_router, prefix="/api/v1")
 
 @app.middleware("http")
 async def auth_middleware(request, call_next):
