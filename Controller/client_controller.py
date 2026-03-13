@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from bson import ObjectId
 from Models.client_model import ClientCreate, ClientUpdate, ClientResponse
-from DB.mongo import client_collection, case_collection
+from DB.db_connect import client_collection, case_collection
 from datetime import datetime, timezone
 
 

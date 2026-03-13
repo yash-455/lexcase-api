@@ -9,7 +9,7 @@ class User_update(BaseModel):
 
 
 class User_delete(BaseModel):
-    password: str 
+    password: str
 
 
 class UserResponse(BaseModel):

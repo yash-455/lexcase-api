@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from bson import ObjectId
 from Models.case_model import CaseCreate, CaseResponse, CaseUpdate, CaseStatus
-from DB.mongo import case_collection
+from DB.db_connect import case_collection
 from datetime import datetime, timezone
 from typing import Optional
 import uuid
@@ -23,7 +23,7 @@ async def add_case(case: CaseCreate, user_id: str):
         case_document = {
             "_id": str(uuid.uuid4()),
             **case.dict(),
-            "user_id": user_id,             # ✅ which lawyer created this case
+            "user_id": user_id,             # which lawyer created this case
             "ai_summary": None,
             "created_at": now,
             "updated_at": now,

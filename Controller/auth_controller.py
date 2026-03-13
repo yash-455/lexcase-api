@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from bson import ObjectId
 from Models.auth_model import User_register, User_login
-from DB.mongo import user_collection
+from DB.db_connect import user_collection
 from Utils.jwt_handler import create_access_token
 from Utils.password import hash_password, verify_password
 from datetime import datetime, timezone
@@ -18,7 +18,8 @@ async def register(user_register: User_register):
             return {"message": "Email already registered"}
 
         user_dict["password"] = hash_password(user_dict["password"])
-        user_dict["created_at"] = datetime.now(timezone.utc)   # ✅ added from PDF schema
+        print(user_dict)
+        user_dict["created_at"] = datetime.now(timezone.utc)   # added from PDF schema
 
         result = await user_collection.insert_one(user_dict)
         return {"message": "User registered successfully", "id": str(result.inserted_id)}
@@ -36,7 +37,7 @@ async def login(user_login: User_login):
         if not verify_password(user_login.password, user["password"]):
             return {"message": "Invalid password"}
 
-        token = create_access_token({"email": user["email"], "id": str(user["_id"])})  # ✅ added id to token
+        token = create_access_token({"email": user["email"], "id": str(user["_id"])})  # added id to token
         return {"token": token}
 
     except Exception as e:

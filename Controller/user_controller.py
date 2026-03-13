@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from bson import ObjectId
 from Models.user_model import User_update, User_delete, UserResponse
-from DB.mongo import user_collection
+from DB.db_connect import user_collection
 from Utils.password import hash_password, verify_password
 
 
@@ -43,12 +43,12 @@ async def update(user_id: str, user: User_update):
         )
 
         if result.matched_count == 0:
-            return {"message": "User not found"}
+            return {"message": "User not found."}
 
         if result.modified_count == 1:
-            return {"message": "User updated successfully"}
+            return {"message": "User updated successfully."}
         else:
-            return {"message": "No changes made"}
+            return {"message": "No changes made."}
 
     except HTTPException as e:
         raise e
@@ -67,7 +67,7 @@ async def delete(user_id: str, user_data: User_delete):
             raise HTTPException(status_code=401, detail="Incorrect password. User not deleted.")
 
         await user_collection.delete_one({"_id": ObjectId(user_id)})
-        return {"message": "User deleted successfully"}
+        return {"message": "User deleted successfully."}
 
     except HTTPException as e:
         raise e

@@ -2,7 +2,7 @@
 from fastapi import HTTPException
 from bson import ObjectId
 from Models.hearing_model import HearingCreate, HearingUpdate
-from DB.mongo import hearing_collection, case_collection
+from DB.db_connect import hearing_collection, case_collection
 from datetime import datetime, timezone
 
 
@@ -19,6 +19,7 @@ async def add_hearing(hearing: HearingCreate):
 
         hearing_document = {
             **hearing.dict(),
+            "date": hearing.date if hearing.date else datetime.now(timezone.utc),
             "created_at": datetime.now(timezone.utc)
         }
 

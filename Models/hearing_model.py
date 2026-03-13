@@ -5,7 +5,7 @@ from datetime import datetime
 
 class HearingCreate(BaseModel):
     case_id: str
-    date: datetime
+    date: Optional[datetime] = None
     judge: Optional[str] = None
     outcome: Optional[str] = None       # e.g. Adjourned, Decided, Pending
     next_date: Optional[datetime] = None
