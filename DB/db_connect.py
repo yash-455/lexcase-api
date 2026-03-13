@@ -5,8 +5,8 @@ import os
 
 load_dotenv()
 
-# client = AsyncIOMotorClient(os.getenv("MONGO_URI"))
-client = MongoClient(os.getenv("MONGO_URI"))
+client = AsyncIOMotorClient(os.getenv("MONGO_URI"))
+# client = MongoClient(os.getenv("MONGO_URI"))
 
 db = client["project"]
 
@@ -17,4 +17,7 @@ hearing_collection = db["hearings"]
 chat_collection = db["chat_sessions"]
 
 
-doc_collection = db["documents"]
+
+sync_client = MongoClient(os.getenv("MONGO_URI"))
+sync_db = sync_client["project"]
+doc_collection = sync_db["documents"]
