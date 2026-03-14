@@ -13,6 +13,10 @@ index = SearchIndexModel(
             {
                 "type": "filter",
                 "path": "doc_id"
+            },
+            {
+                "type": "filter",
+                "path": "case_id"
             }
         ]
     },
