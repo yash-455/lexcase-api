@@ -40,7 +40,20 @@ async def process_query(doc_id: str, query: str):
 
     context = "\n\n".join([doc.page_content for doc in docs])
 
-    template = """Answer the question using the context below.
+    # template = """Answer the question using the context below.
+    # question: {question}
+    # context: {context}
+    # """
+    # AFTER
+    template = """You are a legal assistant AI. Answer the question using the context below.
+
+    Format your response clearly using:
+    - **Bold** for key terms, names, dates, and important values
+    - Bullet points for lists of items, facts, or features
+    - Numbered steps for processes or sequences
+    - Section headings (##) when the answer covers multiple topics
+    - Keep answers concise and well-structured
+
     question: {question}
     context: {context}
     """
@@ -119,29 +132,44 @@ async def get_case_comprehensive_summary(case_id: str):
         }
 
         # Build comprehensive prompt for AI
-        template = """You are a legal case summarizer. Based on the following case information, documents, and hearing records, provide a comprehensive and detailed summary of the case.
+        # AFTER
+        template = """You are a legal case summarizer. Based on the following case information, documents, and hearing records, provide a comprehensive and detailed summary.
 
-Case Details:
-{case_info}
+        Use this exact structure and formatting:
 
-Documents:
-{documents_info}
+        ## 1. Executive Summary
+        A 2-3 sentence overview of the case.
 
-Hearing Records:
-{hearings_info}
+        ## 2. Key Facts & Background
+        - Bullet points for each key fact
 
-Document Content (for reference):
-{document_content}
+        ## 3. Documents & Their Relevance
+        - **[Document Name]** — description of its importance
 
-Please provide:
-1. Executive summary of the case
-2. Key facts and background
-3. All relevant documents and their importance to the case
-4. Hearing history and outcomes
-5. Current status and next steps
-6. Important dates and milestones
+        ## 4. Hearing History
+        - **[Date]** — Judge: [name] | Outcome: [outcome] | Next date: [date]
+        - Notes: [notes]
 
-Provide a professional, detailed summary that a lawyer would find useful."""
+        ## 5. Current Status & Next Steps
+        - Current stage and what actions are pending
+
+        ## 6. Important Dates & Milestones
+        - **[Label]:** [Date]
+
+        Use **bold** for names, dates, and key values. Be professional and concise.
+
+        Case Details:
+        {case_info}
+
+        Documents:
+        {documents_info}
+
+        Hearing Records:
+        {hearings_info}
+
+        Document Content (for reference):
+        {document_content}
+        """
 
         prompt = ChatPromptTemplate.from_template(template)
         chain = prompt | llm
