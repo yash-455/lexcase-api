@@ -2,12 +2,9 @@ import os
 import uuid
 from typing import Optional
 from datetime import datetime, timezone
-import base64
-
 from fastapi import UploadFile, HTTPException
 from fastapi.responses import FileResponse
 from dotenv import load_dotenv
-
 from DB.db_connect import doc_collection
 from Models.doc_model import DocumentResponse, Documentfilter, DocumentPreviewResponse
 from langchain_community.document_loaders import PyPDFLoader
@@ -31,6 +28,11 @@ async def upload_file(
     description: Optional[str] = None,
 ):
     try:
+
+        id = doc_collection.find_one({"doc_id": doc_id})
+        if id:
+            raise HTTPException(status_code=400, detail="Document with this ID already exists.")
+
         # ── Save file to disk ──
         filepath = os.path.join(UPLOAD_DIR, file.filename)
         content = await file.read()
@@ -48,10 +50,8 @@ async def upload_file(
         for chunk in chunks:
             chunk.metadata["doc_id"] = doc_id
             chunk.metadata["user_id"] = user_id
-            if case_id:
-                chunk.metadata["case_id"] = case_id
-            if client_id:
-                chunk.metadata["client_id"] = client_id
+            chunk.metadata["case_id"] = case_id
+            chunk.metadata["client_id"] = client_id
 
         # ── Store chunks + embeddings in Atlas Vector Search ──
         MongoDBAtlasVectorSearch.from_documents(
@@ -60,6 +60,9 @@ async def upload_file(
             collection=doc_collection,
             index_name="rag_data_index",
         )
+
+        # ── Clean up local file ──
+        os.remove(filepath)
 
         # ── Store document record ──
         now = datetime.now(timezone.utc)
@@ -86,13 +89,11 @@ async def upload_file(
             uploaded_at=record["uploaded_at"],
         )
 
-    except Exception as e:
-        return {"error": str(e)}
-
+    except HTTPException as e:
+        raise e
     except Exception as e:
         return {"error": str(e)}
     
-
 async def get_document(doc_id: str):
     try:
         record = doc_collection.find_one({"doc_id": doc_id, "filename": {"$exists": True}})
@@ -107,7 +108,6 @@ async def get_document(doc_id: str):
     except Exception as e:
         return {"error": str(e)}
     
-
  
 # stream PDF file for download by doc_id
 async def download_document(doc_id: str):
@@ -131,7 +131,6 @@ async def download_document(doc_id: str):
     except Exception as e:
         return {"error": str(e)}
     
-
 
 # get all the docs of one client or one case
 async def get_documents(filter: Documentfilter):
@@ -163,16 +162,17 @@ async def get_documents(filter: Documentfilter):
 
 
 # delete document by doc_id
-async def delete_document(doc_id: str):
+async def delete_document(doc_id: str, user_id: str):
     try:
         record = doc_collection.find_one({"doc_id": doc_id, "filename": {"$exists": True}})
         if not record:
             raise HTTPException(status_code=404, detail="Document not found.")
 
-        # delete file from disk
-        filepath = os.path.join(UPLOAD_DIR, record["filename"])
-        if os.path.exists(filepath):
-            os.remove(filepath)
+        if record.get("user_id") != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Unauthorized: You do not have permission to delete this document."
+            )
 
         # delete metadata record and all vector chunks from db
         doc_collection.delete_many({"doc_id": doc_id})

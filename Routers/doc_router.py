@@ -39,5 +39,6 @@ async def get_documents_by_filter(filter: Documentfilter):
 
 # delete document
 @router.delete("/delete/{doc_id}")
-async def delete_document_by_id(doc_id: str):
-    return await delete_document(doc_id)
+async def delete_document_by_id(doc_id: str, request: Request):
+    user_id = request.state.user_id
+    return await delete_document(doc_id, user_id)

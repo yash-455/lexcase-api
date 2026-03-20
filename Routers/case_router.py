@@ -37,11 +37,13 @@ async def get_case_by_id(case_id: str):
 
 # update case
 @router.put("/update/{case_id}")
-async def update_case_by_id(case_id: str, update_data: CaseUpdate):
-    return await update_case(case_id, update_data)
+async def update_case_by_id(case_id: str, update_data: CaseUpdate, request: Request):
+    user_id = get_user_id(request)
+    return await update_case(case_id, update_data, user_id)
 
 
 # DELETE /cases/{case_id}
 @router.delete("/delete/{case_id}")
-async def delete_case_by_id(case_id: str):
-    return await delete_case(case_id)
+async def delete_case_by_id(case_id: str, request: Request):
+    user_id = get_user_id(request)
+    return await delete_case(case_id, user_id)

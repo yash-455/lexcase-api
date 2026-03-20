@@ -18,8 +18,7 @@ async def register(user_register: User_register):
             return {"message": "Email already registered"}
 
         user_dict["password"] = hash_password(user_dict["password"])
-        print(user_dict)
-        user_dict["created_at"] = datetime.now(timezone.utc)   # added from PDF schema
+        user_dict["created_at"] = datetime.now(timezone.utc)
 
         result = await user_collection.insert_one(user_dict)
         return {"message": "User registered successfully", "id": str(result.inserted_id)}

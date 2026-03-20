@@ -5,7 +5,7 @@ from DB.db_connect import user_collection
 from Utils.password import hash_password, verify_password
 
 
-# get current user (from JWT token)
+# get current user
 async def get_me(user_id: str):
     try:
         user = await user_collection.find_one({"_id": ObjectId(user_id)})
@@ -33,9 +33,6 @@ async def update(user_id: str, user: User_update):
 
         if not update_data:
             return {"message": "No fields provided to update."}
-
-        if "password" in update_data:
-            update_data["password"] = hash_password(update_data["password"])
 
         result = await user_collection.update_one(
             {"_id": ObjectId(user_id)},

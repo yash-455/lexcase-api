@@ -19,11 +19,10 @@ async def add_case(case: CaseCreate, user_id: str):
             )
 
         now = datetime.now(timezone.utc)
-
         case_document = {
             "_id": str(uuid.uuid4()),
             **case.dict(),
-            "user_id": user_id,             # which lawyer created this case
+            "user_id": user_id,         
             "ai_summary": None,
             "created_at": now,
             "updated_at": now,
@@ -105,13 +104,19 @@ async def get_case(case_id: str):
 
 
 # update case by id
-async def update_case(case_id: str, update_data: CaseUpdate):
+async def update_case(case_id: str, update_data: CaseUpdate, user_id: str):
     try:
         existing = await case_collection.find_one({"_id": case_id})
         if not existing:
             raise HTTPException(
                 status_code=404,
                 detail="Case not found."
+            )
+
+        if existing.get("user_id") != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Unauthorized: You do not have permission to update this case."
             )
 
         fields_to_update = {
@@ -139,13 +144,19 @@ async def update_case(case_id: str, update_data: CaseUpdate):
 
 
 # delete case by id
-async def delete_case(case_id: str):
+async def delete_case(case_id: str, user_id: str):
     try:
         existing = await case_collection.find_one({"_id": case_id})
         if not existing:
             raise HTTPException(
                 status_code=404,
                 detail="Case not found."
+            )
+
+        if existing.get("user_id") != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Unauthorized: You do not have permission to delete this case."
             )
 
         await case_collection.delete_one({"_id": case_id})

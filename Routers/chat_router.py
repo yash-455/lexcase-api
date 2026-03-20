@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from Models.chet_model import ChatRequest
+from Models.chat_model import ChatRequest
 from Controller.chat_controller import chat_with_db
 
 router = APIRouter(prefix="/chat", tags=["chat"])

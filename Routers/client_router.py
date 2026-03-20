@@ -32,11 +32,13 @@ async def get_cases_by_client(client_id: str):
 
 # PUT /clients/{client_id}
 @router.put("/update/{client_id}")
-async def update_client_by_id(client_id: str, update_data: ClientUpdate):
-    return await update_client(client_id, update_data)
+async def update_client_by_id(client_id: str, update_data: ClientUpdate, request: Request):
+    user_id = request.state.user_id
+    return await update_client(client_id, update_data, user_id)
 
 
 # DELETE /clients/{client_id}
 @router.delete("/delete/{client_id}")
-async def delete_client_by_id(client_id: str):
-    return await delete_client(client_id)
+async def delete_client_by_id(client_id: str, request: Request):
+    user_id = request.state.user_id
+    return await delete_client(client_id, user_id)

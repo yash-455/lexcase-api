@@ -21,25 +21,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router, prefix="/api/v1")
-app.include_router(case_router, prefix="/api/v1")
-app.include_router(user_router, prefix="/api/v1")
-app.include_router(client_router, prefix="/api/v1")
-app.include_router(hearing_router, prefix="/api/v1")
-app.include_router(doc_router, prefix="/api/v1")
-app.include_router(query_router, prefix="/api/v1")
-app.include_router(chat_router, prefix="/api/v1")
+app.include_router(auth_router)
+app.include_router(case_router)
+app.include_router(user_router)
+app.include_router(client_router)
+app.include_router(hearing_router)
+app.include_router(doc_router)
+app.include_router(query_router)
+app.include_router(chat_router)
 
 @app.middleware("http")
 async def auth_middleware(request, call_next):
 
     # these routes don't need a token
     open_routes = [
-        "/api/v1/auth/login",
-        "/api/v1/auth/register",
-        "/api/v1/auth/change_password",
-        "/api/v1/auth/forgot_password",
-        "/api/v1/auth/reset_password",
+        "/auth/login",
+        "/auth/register",
+        "/auth/change_password",
+        "/auth/forgot_password",
+        "/auth/reset_password",
     ]
 
     if request.url.path in open_routes:

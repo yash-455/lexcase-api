@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 # add new client
 async def add_client(client: ClientCreate, user_id: str):
     try:
-        # check if client with same email already exists for this lawyer
         if client.email:
             existing = await client_collection.find_one(
                 {
@@ -26,7 +25,7 @@ async def add_client(client: ClientCreate, user_id: str):
 
         client_document = {
             **client.dict(),
-            "user_id": user_id,             # which lawyer this client belongs to
+            "user_id": user_id,
             "created_at": now,
         }
 
@@ -48,7 +47,6 @@ async def get_clients(search: str = None, user_id: str = None):
     try:
         query = {}
 
-        # only return clients belonging to logged in lawyer
         if user_id:
             query["user_id"] = user_id
 
@@ -129,13 +127,19 @@ async def get_client_cases(client_id: str):
 
 
 # update client
-async def update_client(client_id: str, update_data: ClientUpdate):
+async def update_client(client_id: str, update_data: ClientUpdate, user_id: str):
     try:
         existing = await client_collection.find_one({"_id": ObjectId(client_id)})
         if not existing:
             raise HTTPException(
                 status_code=404,
                 detail="Client not found."
+            )
+
+        if existing.get("user_id") != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Unauthorized: You do not have permission to update this client."
             )
 
         fields_to_update = {
@@ -161,13 +165,19 @@ async def update_client(client_id: str, update_data: ClientUpdate):
 
 
 # delete client
-async def delete_client(client_id: str):
+async def delete_client(client_id: str, user_id: str):
     try:
         existing = await client_collection.find_one({"_id": ObjectId(client_id)})
         if not existing:
             raise HTTPException(
                 status_code=404,
                 detail="Client not found."
+            )
+
+        if existing.get("user_id") != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Unauthorized: You do not have permission to delete this client."
             )
 
         await client_collection.delete_one({"_id": ObjectId(client_id)})

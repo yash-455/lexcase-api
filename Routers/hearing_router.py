@@ -25,11 +25,13 @@ async def get_hearing_by_id(hearing_id: str):
 
 # PUT /hearings/update/{hearing_id}
 @router.put("/update/{hearing_id}")
-async def update_hearing_by_id(hearing_id: str, update_data: HearingUpdate):
-    return await update_hearing(hearing_id, update_data)
+async def update_hearing_by_id(hearing_id: str, update_data: HearingUpdate, request: Request):
+    user_id = request.state.user_id
+    return await update_hearing(hearing_id, update_data, user_id)
 
 
 # DELETE /hearings/delete/{hearing_id}
 @router.delete("/delete/{hearing_id}")
-async def delete_hearing_by_id(hearing_id: str):
-    return await delete_hearing(hearing_id)
+async def delete_hearing_by_id(hearing_id: str, request: Request):
+    user_id = request.state.user_id
+    return await delete_hearing(hearing_id, user_id)

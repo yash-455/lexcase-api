@@ -1,4 +1,3 @@
-# Controller/hearing_controller.py
 from fastapi import HTTPException
 from bson import ObjectId
 from Models.hearing_model import HearingCreate, HearingUpdate
@@ -19,7 +18,7 @@ async def add_hearing(hearing: HearingCreate):
 
         hearing_document = {
             **hearing.dict(),
-            "date": hearing.date if hearing.date else datetime.now(timezone.utc),
+            "date": hearing.date,
             "created_at": datetime.now(timezone.utc)
         }
 
@@ -96,7 +95,7 @@ async def get_hearing(hearing_id: str):
 
 
 # update hearing by id
-async def update_hearing(hearing_id: str, update_data: HearingUpdate):
+async def update_hearing(hearing_id: str, update_data: HearingUpdate, user_id: str):
     try:
         # check if hearing exists
         existing = await hearing_collection.find_one({"_id": ObjectId(hearing_id)})
@@ -106,38 +105,12 @@ async def update_hearing(hearing_id: str, update_data: HearingUpdate):
                 detail="Hearing not found."
             )
 
-        # only update fields that were actually sent
-        fields_to_update = {
-            key: value
-            for key, value in update_data.dict().items()
-            if value is not None
-        }
-
-        if not fields_to_update:
-            return {"message": "No fields provided to update."}
-
-        await hearing_collection.update_one(
-            {"_id": ObjectId(hearing_id)},
-            {"$set": fields_to_update}
-        )
-
-        return {"message": "Hearing updated successfully."}
-
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        return {"error": str(e)}
-    
-
-# update hearing by id
-async def update_hearing(hearing_id: str, update_data: HearingUpdate):
-    try:
-        # check if hearing exists
-        existing = await hearing_collection.find_one({"_id": ObjectId(hearing_id)})
-        if not existing:
+        # verify user owns the case this hearing belongs to
+        case = await case_collection.find_one({"_id": existing.get("case_id")})
+        if not case or case.get("user_id") != user_id:
             raise HTTPException(
-                status_code=404,
-                detail="Hearing not found."
+                status_code=403,
+                detail="Unauthorized: You do not have permission to update this hearing."
             )
 
         # only update fields that were actually sent
@@ -165,7 +138,7 @@ async def update_hearing(hearing_id: str, update_data: HearingUpdate):
 
 
 # delete hearing by id
-async def delete_hearing(hearing_id: str):
+async def delete_hearing(hearing_id: str, user_id: str):
     try:
         # check if hearing exists first
         existing = await hearing_collection.find_one({"_id": ObjectId(hearing_id)})
@@ -173,6 +146,14 @@ async def delete_hearing(hearing_id: str):
             raise HTTPException(
                 status_code=404,
                 detail="Hearing not found."
+            )
+
+        # verify user owns the case this hearing belongs to
+        case = await case_collection.find_one({"_id": existing.get("case_id")})
+        if not case or case.get("user_id") != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Unauthorized: You do not have permission to delete this hearing."
             )
 
         await hearing_collection.delete_one({"_id": ObjectId(hearing_id)})
