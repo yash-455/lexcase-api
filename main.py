@@ -15,7 +15,7 @@ app = FastAPI(title="LexCase API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,7 +42,7 @@ async def auth_middleware(request, call_next):
         "/auth/reset_password",
     ]
 
-    if request.url.path in open_routes:
+    if request.url.path in open_routes or request.method == "OPTIONS":
         response = await call_next(request)
         return response
 
