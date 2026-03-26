@@ -1,4 +1,3 @@
-# Routers/hearing_router.py
 from fastapi import APIRouter, Request
 from typing import Optional
 from Controller.hearing_controller import *
@@ -12,25 +11,25 @@ async def create_hearing(hearing: HearingCreate):
 
 @router.get("/get")
 async def fetch_hearings(
-    filter: Optional[str] = None,      # "upcoming" or "past"
+    request: Request,
+    filter: Optional[str] = None,
     case_id: Optional[str] = None
-    ):
-    return await get_hearings(filter, case_id)
+):
+    user_id = request.state.user_id          # ← pass logged-in user
+    return await get_hearings(filter, case_id, user_id)
 
 
-# GET /hearings/get/{hearing_id}
 @router.get("/get/{hearing_id}")
 async def get_hearing_by_id(hearing_id: str):
     return await get_hearing(hearing_id)
 
-# PUT /hearings/update/{hearing_id}
+
 @router.put("/update/{hearing_id}")
 async def update_hearing_by_id(hearing_id: str, update_data: HearingUpdate, request: Request):
     user_id = request.state.user_id
     return await update_hearing(hearing_id, update_data, user_id)
 
 
-# DELETE /hearings/delete/{hearing_id}
 @router.delete("/delete/{hearing_id}")
 async def delete_hearing_by_id(hearing_id: str, request: Request):
     user_id = request.state.user_id

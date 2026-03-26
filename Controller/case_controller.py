@@ -25,7 +25,7 @@ async def add_case(case: CaseCreate, user_id: str):
         case_document = {
             "_id": str(uuid.uuid4()),
             **case.dict(),
-            "user_id": user_id,         
+            "user_id": user_id,
             "ai_summary": None,
             "created_at": now,
             "updated_at": now,
@@ -90,22 +90,27 @@ async def get_cases_search(
 # get single case by id
 async def get_case(case_id: str):
     try:
-        from Controller.hearing_controller import get_hearings
-        from Controller.doc_controller import get_documents
-        from Models.doc_model import Documentfilter
-
         case = await case_collection.find_one({"_id": case_id})
         if not case:
             raise HTTPException(status_code=404, detail="Case not found.")
         case["id"] = str(case.pop("_id"))
 
-        hearings = await get_hearings(filter=None, case_id=case_id)
-        docs = await get_documents(Documentfilter(case_id=case_id))
+        # Safely fetch hearings — a new case may have none, treat 404 as empty list
+        try:
+            hearings = await get_hearings(filter=None, case_id=case_id)
+            case["hearings"] = hearings if isinstance(hearings, list) else []
+        except HTTPException:
+            case["hearings"] = []
 
-        case["hearings"] = hearings if isinstance(hearings, list) else []
-        case["documents"] = docs if isinstance(docs, list) else []
+        # Safely fetch documents — a new case may have none, treat 404 as empty list
+        try:
+            docs = await get_documents(Documentfilter(case_id=case_id))
+            case["documents"] = docs if isinstance(docs, list) else []
+        except HTTPException:
+            case["documents"] = []
 
         return case
+
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -175,24 +180,3 @@ async def delete_case(case_id: str, user_id: str):
         raise e
     except Exception as e:
         return {"error": str(e)}
-    
-
-# async def get_full_case(case_id: str):
-#     try:
-#         case = await get_case(case_id)
-#         if "error" in case or isinstance(case, dict) and not case.get("id"):
-#             raise HTTPException(status_code=404, detail="Case not found.")
-
-#         hearings = await get_hearings(filter=None, case_id=case_id)
-#         docs = await get_documents(Documentfilter(case_id=case_id))
-
-#         return {
-#             "case": case,
-#             "hearings": hearings if isinstance(hearings, list) else [],
-#             "documents": docs if isinstance(docs, list) else [],
-#         }
-
-#     except HTTPException as e:
-#         raise e
-#     except Exception as e:
-#         return {"error": str(e)}

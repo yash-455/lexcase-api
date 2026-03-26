@@ -33,8 +33,11 @@ async def upload_file(
         if id:
             raise HTTPException(status_code=400, detail="Document with this ID already exists.")
 
-        # ── Save file to disk ──
-        filepath = os.path.join(UPLOAD_DIR, file.filename)
+        # ── Save file to disk with a unique stored name ──
+        original_filename = file.filename
+        ext = os.path.splitext(original_filename)[1] or ".pdf"
+        stored_filename = f"{doc_id}_{uuid.uuid4().hex}{ext}"
+        filepath = os.path.join(UPLOAD_DIR, stored_filename)
         content = await file.read()
         with open(filepath, "wb") as f:
             f.write(content)
@@ -61,15 +64,13 @@ async def upload_file(
             index_name="rag_data_index",
         )
 
-        # ── Clean up local file ──
-        os.remove(filepath)
-
         # ── Store document record ──
         now = datetime.now(timezone.utc)
         record = {
             "_id": str(uuid.uuid4()),
             "doc_id": doc_id,
-            "filename": file.filename,
+            "filename": original_filename,
+            "stored_filename": stored_filename,
             "case_id": case_id,
             "client_id": client_id,
             "description": description,
@@ -116,9 +117,10 @@ async def download_document(doc_id: str):
         if not record:
             raise HTTPException(status_code=404, detail="Document not found.")
  
-        filepath = os.path.join(UPLOAD_DIR, record["filename"])
+        stored_name = record.get("stored_filename") or record.get("filename")
+        filepath = os.path.join(UPLOAD_DIR, stored_name)
         if not os.path.exists(filepath):
-            raise HTTPException(status_code=404, detail="File not found on server.")
+            raise HTTPException(status_code=404, detail="File not found on server. Please re-upload this document.")
  
         return FileResponse(
             path=filepath,
