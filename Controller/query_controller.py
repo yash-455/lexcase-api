@@ -23,12 +23,23 @@ vector_search = MongoDBAtlasVectorSearch(
 )
 
 
-async def process_query(doc_id: str, query: str):
+async def process_query(doc_id: str, query: str, user_id: str):
+
+    record = doc_collection.find_one({
+        "doc_id": doc_id,
+        "user_id": user_id,
+        "filename": {"$exists": True}
+    })
+
+    if not record:
+        raise HTTPException(status_code=403, detail="Document not found or access denied.")
+     
     retriever = vector_search.as_retriever(
         search_kwargs={
             "k": 3,
             "pre_filter": {
-                "doc_id": str(doc_id)
+                "doc_id": str(doc_id),
+                "user_id": user_id
             },
         }
     )
@@ -40,11 +51,6 @@ async def process_query(doc_id: str, query: str):
 
     context = "\n\n".join([doc.page_content for doc in docs])
 
-    # template = """Answer the question using the context below.
-    # question: {question}
-    # context: {context}
-    # """
-    # AFTER
     template = """You are a legal assistant AI. Answer the question using the context below.
 
     Format your response clearly using:
@@ -69,11 +75,13 @@ async def process_query(doc_id: str, query: str):
     return {"answer": response.content}
 
 
-async def get_case_comprehensive_summary(case_id: str):
-    """
-    Retrieves comprehensive case information (details, documents, hearings)
-    and summarizes it using AI
-    """
+async def get_case_comprehensive_summary(case_id: str, user_id: str):
+    case = await case_collection.find_one({
+        "_id": case_id,
+        "user_id": user_id
+    })
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found.")
     try:
         # Fetch case details
         case = await case_collection.find_one({"_id": case_id})
