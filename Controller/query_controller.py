@@ -5,6 +5,7 @@ from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_core.prompts import ChatPromptTemplate
 from DB.db_connect import doc_collection, case_collection, hearing_collection
 from fastapi import HTTPException
+from pymongo.errors import OperationFailure
 
 load_dotenv()
 
@@ -23,56 +24,6 @@ vector_search = MongoDBAtlasVectorSearch(
 )
 
 
-# async def process_query(doc_id: str, query: str, user_id: str):
-
-#     record = doc_collection.find_one({
-#         "doc_id": doc_id,
-#         "user_id": user_id,
-#         "filename": {"$exists": True}
-#     })
-
-#     if not record:
-#         raise HTTPException(status_code=403, detail="Document not found or access denied.")
-     
-#     retriever = vector_search.as_retriever(
-#         search_kwargs={
-#             "k": 3,
-#             "pre_filter": {
-#                 "doc_id": str(doc_id),
-#                 "user_id": user_id
-#             },
-#         }
-#     )
-
-#     docs = retriever.invoke(query)
-
-#     if not docs:
-#         return {"answer": "No relevant documents found."}
-
-#     context = "\n\n".join([doc.page_content for doc in docs])
-
-#     template = """You are a legal assistant AI. Answer the question using the context below.
-
-#     Format your response clearly using:
-#     - **Bold** for key terms, names, dates, and important values
-#     - Bullet points for lists of items, facts, or features
-#     - Numbered steps for processes or sequences
-#     - Section headings (##) when the answer covers multiple topics
-#     - Keep answers concise and well-structured
-
-#     question: {question}
-#     context: {context}
-#     """
-#     prompt = ChatPromptTemplate.from_template(template)
-
-#     chain = prompt | llm
-
-#     response = chain.invoke({
-#         "question": query,
-#         "context": context,
-#     })
-
-#     return {"answer": response.content}
 async def process_query(doc_id: str, query: str, user_id: str):
     record = doc_collection.find_one({
         "doc_id": doc_id,
@@ -96,7 +47,22 @@ async def process_query(doc_id: str, query: str, user_id: str):
         }
     )
 
-    docs = retriever.invoke(query)
+    try:
+        docs = retriever.invoke(query)
+    except OperationFailure as err:
+        # Backward-compatible fallback while vector index is being updated.
+        if "Path 'user_id' needs to be indexed as filter" in str(err):
+            fallback_retriever = vector_search.as_retriever(
+                search_kwargs={
+                    "k": 3,
+                    "pre_filter": {
+                        "doc_id": str(doc_id)
+                    },
+                }
+            )
+            docs = fallback_retriever.invoke(query)
+        else:
+            raise
     print(f"DEBUG: Retrieved {len(docs)} documents from vector search")
 
     if not docs:
@@ -124,6 +90,9 @@ async def process_query(doc_id: str, query: str, user_id: str):
     })
 
     return {"answer": response.content}
+
+
+
 
 async def get_case_comprehensive_summary(case_id: str, user_id: str):
     case = await case_collection.find_one({

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from Controller.auth_controller import register, login, change_pass
-from Models.auth_model import User_register, User_login
+from Controller.auth_controller import register, login, change_pass, verify_register_code
+from Models.auth_model import User_register, User_login, RegisterVerification
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -8,6 +8,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/register")
 async def user_register(user_register: User_register):
     return await register(user_register)
+
+
+@router.post("/verify_registration")
+async def user_verify_registration(payload: RegisterVerification):
+    return await verify_register_code(payload)
 
 # login user
 @router.post("/login")

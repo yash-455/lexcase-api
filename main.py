@@ -7,6 +7,7 @@ from Routers.hearing_router import router as hearing_router
 from Routers.doc_router import router as doc_router 
 from Routers.query_router import router as query_router
 from Routers.chat_router import router as chat_router
+from Routers.conversation_router import router as conversation_router
 from Routers.dashboard_router import router as dashboard_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -30,6 +31,7 @@ app.include_router(hearing_router)
 app.include_router(doc_router)
 app.include_router(query_router)
 app.include_router(chat_router)
+app.include_router(conversation_router)
 app.include_router(dashboard_router)
 
 @app.middleware("http")
@@ -39,6 +41,7 @@ async def auth_middleware(request, call_next):
     open_routes = [
         "/auth/login",
         "/auth/register",
+        "/auth/verify_registration",
         "/auth/change_password",
         "/auth/forgot_password",
         "/auth/reset_password",

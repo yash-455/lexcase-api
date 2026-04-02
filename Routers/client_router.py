@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from typing import Optional
+from typing import Optional, List
 from Models.client_model import ClientCreate, ClientUpdate, ClientResponse
 from Controller.client_controller import add_client, get_clients, get_client, get_client_cases, update_client, delete_client
 
@@ -12,14 +12,14 @@ async def create_client(client: ClientCreate, request: Request):
     return await add_client(client, user_id)
 
 # GET /clients?search=
-@router.get("/get_all")
+@router.get("/get_all", response_model=List[ClientResponse])
 async def search_clients(request: Request, search: Optional[str] = None):
     user_id = request.state.user_id
     return await get_clients(search, user_id)
 
 
 # GET /clients/{client_id}
-@router.get("/get/{client_id}")
+@router.get("/get/{client_id}", response_model=ClientResponse)
 async def get_client_by_id(client_id: str):
     return await get_client(client_id)
 

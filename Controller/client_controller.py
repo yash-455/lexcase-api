@@ -33,6 +33,7 @@ async def add_client(client: ClientCreate, user_id: str):
 
         client_document["id"] = str(result.inserted_id)
         client_document.pop("_id", None)
+        client_document.setdefault("address", None)
 
         return ClientResponse(**client_document)
 
@@ -59,6 +60,7 @@ async def get_clients(search: str = None, user_id: str = None):
         clients = []
         async for client in cursor:
             client["id"] = str(client.pop("_id"))
+            client.setdefault("address", None)
             clients.append(client)
 
         if not clients:
@@ -86,6 +88,7 @@ async def get_client(client_id: str):
             )
 
         client["id"] = str(client.pop("_id"))
+        client.setdefault("address", None)
         return client
 
     except HTTPException as e:

@@ -158,9 +158,16 @@
 from fastapi import HTTPException
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from DB.db_connect import case_collection, client_collection, hearing_collection, doc_collection
+from DB.db_connect import (
+    case_collection,
+    client_collection,
+    hearing_collection,
+    doc_collection,
+    conversation_collection,
+)
 from fastapi.responses import PlainTextResponse
 from dotenv import load_dotenv
+from datetime import datetime, timezone
 import os
 
 load_dotenv()
@@ -170,8 +177,6 @@ llm = ChatOpenAI(
     temperature=0,
     api_key=os.getenv("OPENAI_API_KEY"),
 )
-
-chat_histories = {}
 
 
 async def fetch_all_context(user_id: str) -> str:
@@ -242,17 +247,30 @@ async def fetch_all_context(user_id: str) -> str:
     return "\n".join(context_parts) if context_parts else "No data found in the database."
 
 
-async def chat_with_db(question: str, user_id: str):
+def _format_conversation_history(messages: list[dict]) -> str:
+    if not messages:
+        return "No previous conversation in this session."
+
+    formatted = []
+    for msg in messages:
+        role = "User" if msg.get("role") == "user" else "Assistant"
+        formatted.append(f"{role}: {msg.get('content', '')}")
+
+    return "\n".join(formatted)
+
+
+async def chat_with_db(question: str, user_id: str, conversation_id: str):
     try:
         context = await fetch_all_context(user_id)
 
-        # ── Chat History ──
-        if user_id not in chat_histories:
-            chat_histories[user_id] = []
+        conversation = await conversation_collection.find_one(
+            {"_id": conversation_id, "user_id": user_id}
+        )
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found.")
 
-        history_text = ""
-        for msg in chat_histories[user_id][-6:]:
-            history_text += f"User: {msg['question']}\nAssistant: {msg['answer']}\n\n"
+        existing_messages = conversation.get("messages", [])
+        history_text = _format_conversation_history(existing_messages)
 
         template = """You are an expert legal assistant AI for a law firm case management system.
 You have complete access to the lawyer's database including all cases, clients, hearings, and documents.
@@ -292,7 +310,7 @@ CASES FOUND: 4
 SUMMARY:
 Write 2-3 lines summarizing the answer here.
 
-=== CHAT HISTORY ===
+=== CURRENT SESSION CHAT HISTORY ===
 {history}
 
 === DATABASE CONTEXT ===
@@ -315,10 +333,19 @@ Remember: Be thorough, detailed, and well-formatted. A lawyer depends on this in
 
         answer = response.content
 
-        chat_histories[user_id].append({
-            "question": question,
-            "answer": answer
-        })
+        now = datetime.now(timezone.utc)
+        new_messages = [
+            {"role": "user", "content": question, "timestamp": now},
+            {"role": "assistant", "content": answer, "timestamp": now},
+        ]
+
+        await conversation_collection.update_one(
+            {"_id": conversation_id, "user_id": user_id},
+            {
+                "$push": {"messages": {"$each": new_messages}},
+                "$set": {"updated_at": now},
+            },
+        )
     
         return PlainTextResponse(content=answer)
 

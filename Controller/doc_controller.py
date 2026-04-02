@@ -176,6 +176,12 @@ async def delete_document(doc_id: str, user_id: str):
                 detail="Unauthorized: You do not have permission to delete this document."
             )
 
+        stored_name = record.get("stored_filename") or record.get("filename")
+        filepath = os.path.join(UPLOAD_DIR, stored_name) if stored_name else None
+
+        if filepath and os.path.exists(filepath):
+            os.remove(filepath)
+
         # delete metadata record and all vector chunks from db
         doc_collection.delete_many({"doc_id": doc_id})
 

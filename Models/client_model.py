@@ -8,6 +8,7 @@ class ClientCreate(BaseModel):
     name: str
     email: Optional[str] = None
     phone: Optional[str] = None
+    address: Optional[str] = None
 
 
 # ── Update Schema ──
@@ -15,13 +16,15 @@ class ClientUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
+    address: Optional[str] = None
 
 
 # ── Response Schema ──
 class ClientResponse(BaseModel):
     id: str
     name: str
-    email: Optional[str]
-    phone: Optional[str]
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
     user_id: str
     created_at: datetime
