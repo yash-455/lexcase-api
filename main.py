@@ -41,7 +41,6 @@ async def auth_middleware(request, call_next):
     open_routes = [
         "/auth/login",
         "/auth/register",
-        "/auth/verify_registration",
         "/auth/change_password",
         "/auth/forgot_password",
         "/auth/reset_password",

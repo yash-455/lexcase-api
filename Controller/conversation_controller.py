@@ -14,6 +14,9 @@ async def create_conversation(user_id: str, title: str | None = None):
         "user_id": user_id,
         "title": title.strip() if title and title.strip() else "New Chat",
         "messages": [],
+        # Compact rolling memory used as prompt context so we don't resend the full chat history.
+        "memory": "",
+        "memory_updated_at": now,
         "created_at": now,
         "updated_at": now,
     }

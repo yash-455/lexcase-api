@@ -12,8 +12,3 @@ class User_register(BaseModel):
 class User_login(BaseModel):
     email: str
     password: str
-
-
-class RegisterVerification(BaseModel):
-    email: str
-    code: str
