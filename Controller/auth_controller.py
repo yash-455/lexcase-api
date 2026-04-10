@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from bson import ObjectId
-from Models.auth_model import User_register, User_login
+from Models.auth_model import User_register, User_login, Change_password
 from DB.db_connect import user_collection
 from Utils.jwt_handler import create_access_token
 from Utils.password import hash_password, verify_password
@@ -37,7 +37,7 @@ async def login(user_login: User_login):
         if not verify_password(user_login.password, user["password"]):
             return {"message": "Invalid password"}
 
-        token = create_access_token({"email": user["email"], "id": str(user["_id"])})  # added id to token
+        token = create_access_token({"email": user["email"], "id": str(user["_id"])})  # added id to token 
         return {"token": token}
 
     except Exception as e:
@@ -45,13 +45,16 @@ async def login(user_login: User_login):
 
 
 # change password
-async def change_pass(user: User_login):
+async def change_pass(user: Change_password):
     try:
         existing_user = await user_collection.find_one({"email": user.email})
         if not existing_user:
             return {"message": "User not found"}
 
-        hashed_password = hash_password(user.password)
+        if not verify_password(user.old_password, existing_user["password"]):
+            return {"message": "Old password is incorrect"}
+
+        hashed_password = hash_password(user.new_password)
         result = await user_collection.update_one(
             {"email": user.email},
             {"$set": {"password": hashed_password}}

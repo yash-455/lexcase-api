@@ -8,13 +8,13 @@ from dotenv import load_dotenv
 from DB.db_connect import doc_collection
 from Models.doc_model import DocumentResponse, Documentfilter, DocumentPreviewResponse
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_mongodb import MongoDBAtlasVectorSearch
+from Utils.gemini_client import GeminiEmbeddings
 
 load_dotenv()
 
-embedding = OpenAIEmbeddings(api_key=os.getenv("OPENAI_API_KEY"))
+embedding = GeminiEmbeddings()
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -93,7 +93,7 @@ async def upload_file(
     except HTTPException as e:
         raise e
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
     
 async def get_document(doc_id: str):
     try:
@@ -107,7 +107,7 @@ async def get_document(doc_id: str):
     except HTTPException as e:
         raise e
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
     
  
 # stream PDF file for download by doc_id
@@ -131,7 +131,7 @@ async def download_document(doc_id: str):
     except HTTPException as e:
         raise e
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
     
 
 # get all the docs of one client or one case

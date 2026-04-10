@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from Controller.auth_controller import register, login, change_pass
-from Models.auth_model import User_register, User_login
+from Models.auth_model import User_register, User_login, Change_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -15,5 +15,5 @@ async def user_login(user_login: User_login):
     return await login(user_login)
 
 @router.post("/change_password")
-async def user_change_pass(user: User_login):
+async def user_change_pass(user: Change_password):
     return await change_pass(user)

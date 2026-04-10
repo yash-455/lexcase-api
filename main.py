@@ -15,14 +15,6 @@ from Utils.jwt_handler import verify_access_token
 
 app = FastAPI(title="LexCase API", version="1.0.0")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 app.include_router(auth_router)
 app.include_router(case_router)
 app.include_router(user_router)
@@ -71,3 +63,12 @@ async def auth_middleware(request, call_next):
 
     response = await call_next(request)
     return response
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)

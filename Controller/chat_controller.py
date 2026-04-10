@@ -1,5 +1,4 @@
 from fastapi import HTTPException
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from DB.db_connect import (
     case_collection,
@@ -13,6 +12,8 @@ from dotenv import load_dotenv
 from datetime import datetime, timezone
 import os
 import re
+import traceback
+from Utils.gemini_client import build_chat_model, DEFAULT_CHAT_MODEL, DEFAULT_MEMORY_MODEL
                 
 load_dotenv()
 
@@ -23,18 +24,13 @@ CHAT_MESSAGE_MAX_CHARS = int(os.getenv("CHAT_MESSAGE_MAX_CHARS", "1200"))
 CHAT_MEMORY_MAX_CHARS = int(os.getenv("CHAT_MEMORY_MAX_CHARS", "7000"))
 CHAT_MEMORY_TARGET_CHARS = int(os.getenv("CHAT_MEMORY_TARGET_CHARS", "3500"))
 
-llm = ChatOpenAI(
-    model="gpt-3.5-turbo",
-    temperature=0,
-    api_key=os.getenv("OPENAI_API_KEY"),
-)
+llm = build_chat_model(model=DEFAULT_CHAT_MODEL, temperature=0)
 
 # Separate LLM binding for memory compression (kept small/cheap).
-memory_llm = ChatOpenAI(
-    model=os.getenv("CHAT_MEMORY_MODEL", "gpt-3.5-turbo"),
+memory_llm = build_chat_model(
+    model=os.getenv("CHAT_MEMORY_MODEL", DEFAULT_MEMORY_MODEL),
     temperature=0,
-    api_key=os.getenv("OPENAI_API_KEY"),
-    max_tokens=600,
+    max_output_tokens=600,
 )
 
 
@@ -332,4 +328,5 @@ Remember: Be thorough, detailed, and well-formatted. A lawyer depends on this in
         return PlainTextResponse(content=answer)
 
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
