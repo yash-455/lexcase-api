@@ -16,11 +16,16 @@ DEFAULT_EMBEDDING_DIMENSIONS = int(os.getenv("GEMINI_EMBEDDING_DIMENSIONS", "768
 
 
 def get_google_api_key() -> str:
-    api_key = (
-        os.getenv("GEMINI_API_KEY")
-        or os.getenv("GOOGLE_API_KEY")
-        or os.getenv("GOOGLE_GENERATIVE_AI_API_KEY")
-    )
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    google_key = os.getenv("GOOGLE_API_KEY")
+    google_genai_key = os.getenv("GOOGLE_GENERATIVE_AI_API_KEY")
+
+    # Avoid SDK noise when both GEMINI_API_KEY and GOOGLE_API_KEY are set.
+    # Keep a single key in process env so provider clients don't print warnings.
+    if gemini_key and google_key:
+        os.environ.pop("GEMINI_API_KEY", None)
+
+    api_key = gemini_key or google_key or google_genai_key
     if not api_key:
         raise ValueError(
             "Missing Gemini API key. Set GEMINI_API_KEY or GOOGLE_API_KEY in your environment."

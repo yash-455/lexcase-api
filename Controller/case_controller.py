@@ -34,12 +34,16 @@ async def add_case(case: CaseCreate, user_id: str):
         await case_collection.insert_one(case_document)
 
         case_document["id"] = case_document.pop("_id")
-        return CaseResponse(**case_document)
+        return {
+            "success": True,
+            "message": "Case created successfully",
+            "data": CaseResponse(**case_document).dict(),
+        }
 
     except HTTPException as e:
         raise e
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Failed to create case") from e
 
 
 # get all cases — search by case_name or case_number, filter by status
@@ -79,12 +83,16 @@ async def get_cases_search(
                 detail="No cases found."
             )
 
-        return cases
+        return {
+            "success": True,
+            "message": "Cases fetched successfully",
+            "data": cases,
+        }
 
     except HTTPException as e:
         raise e
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Failed to fetch cases") from e
 
 
 # get single case by id
@@ -109,12 +117,16 @@ async def get_case(case_id: str):
         except HTTPException:
             case["documents"] = []
 
-        return case
+        return {
+            "success": True,
+            "message": "Case fetched successfully",
+            "data": case,
+        }
 
     except HTTPException as e:
         raise e
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Failed to fetch case") from e
 
 
 # update case by id
@@ -140,7 +152,7 @@ async def update_case(case_id: str, update_data: CaseUpdate, user_id: str):
         }
 
         if not fields_to_update:
-            return {"message": "No fields provided to update."}
+            raise HTTPException(status_code=400, detail="No fields provided to update.")
 
         fields_to_update["updated_at"] = datetime.now(timezone.utc)
 
@@ -149,12 +161,16 @@ async def update_case(case_id: str, update_data: CaseUpdate, user_id: str):
             {"$set": fields_to_update}
         )
 
-        return {"message": "Case updated successfully."}
+        return {
+            "success": True,
+            "message": "Case updated successfully",
+            "data": None,
+        }
 
     except HTTPException as e:
         raise e
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Failed to update case") from e
 
 
 # delete case by id
@@ -174,9 +190,13 @@ async def delete_case(case_id: str, user_id: str):
             )
 
         await case_collection.delete_one({"_id": case_id})
-        return {"message": "Case deleted successfully."}
+        return {
+            "success": True,
+            "message": "Case deleted successfully",
+            "data": None,
+        }
 
     except HTTPException as e:
         raise e
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Failed to delete case") from e

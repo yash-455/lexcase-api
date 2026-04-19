@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from Routers.auth_router import router as auth_router
 from Routers.case_router import router as case_router
 from Routers.user_router import router as user_router  
@@ -11,6 +11,7 @@ from Routers.conversation_router import router as conversation_router
 from Routers.dashboard_router import router as dashboard_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from Utils.jwt_handler import verify_access_token
 
 app = FastAPI(title="LexCase API", version="1.0.0")
@@ -30,15 +31,17 @@ app.include_router(dashboard_router)
 async def auth_middleware(request, call_next):
 
     # these routes don't need a token
-    open_routes = [
+    open_routes = {
         "/auth/login",
         "/auth/register",
-        "/auth/change_password",
-        "/auth/forgot_password",
-        "/auth/reset_password",
-    ]
+        "/auth/forgot_password/request_otp",
+        "/auth/forgot_password/verify_otp",
+        "/auth/forgot_password/reset",
+    }
 
-    if request.url.path in open_routes or request.method == "OPTIONS":
+    normalized_path = request.url.path.rstrip("/") or "/"
+
+    if normalized_path in open_routes or request.method == "OPTIONS":
         response = await call_next(request)
         return response
 
@@ -46,17 +49,31 @@ async def auth_middleware(request, call_next):
     auth_header = request.headers.get("authorization")
 
     if auth_header is None:
-        return JSONResponse(status_code=403, content={"error": "unauthorized"})
+        return JSONResponse(
+            status_code=401,
+            content={"success": False, "message": "Missing authorization token."},
+        )
 
     try:
-        token = auth_header.split(" ")[1]
-    except IndexError:
-        return JSONResponse(status_code=403, content={"error": "invalid authorization header format"})
+        scheme, token = auth_header.split(" ", 1)
+        if scheme.lower() != "bearer":
+            raise ValueError("Invalid auth scheme")
+    except ValueError:
+        return JSONResponse(
+            status_code=401,
+            content={
+                "success": False,
+                "message": "Invalid authorization header format. Use: Bearer <token>.",
+            },
+        )
 
     decode = verify_access_token(token)
 
     if decode is None:
-        return JSONResponse(status_code=403, content={"error": "unauthorized"})
+        return JSONResponse(
+            status_code=401,
+            content={"success": False, "message": "Invalid or expired token."},
+        )
 
     request.state.user_id = decode.get("id")
     request.state.email = decode.get("email")
@@ -72,3 +89,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    message = exc.detail if isinstance(exc.detail, str) else "Request failed."
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "message": message,
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=400,
+        content={
+            "success": False,
+            "message": "Validation error.",
+            "details": exc.errors(),
+        },
+    )

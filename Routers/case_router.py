@@ -16,7 +16,7 @@ def get_user_id(request: Request) -> str:
 
 
 # add cases
-@router.post("/add", response_model=CaseResponse, status_code=201)
+@router.post("/add", status_code=201)
 async def create_case(case: CaseCreate, request: Request):
     user_id = get_user_id(request)
     return await add_case(case, user_id)

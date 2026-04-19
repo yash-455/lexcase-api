@@ -29,8 +29,8 @@ async def upload_file(
 ):
     try:
 
-        id = doc_collection.find_one({"doc_id": doc_id})
-        if id:
+        existing_doc = doc_collection.find_one({"doc_id": doc_id, "filename": {"$exists": True}})
+        if existing_doc:
             raise HTTPException(status_code=400, detail="Document with this ID already exists.")
 
         # ── Save file to disk with a unique stored name ──
@@ -79,16 +79,20 @@ async def upload_file(
         }
         doc_collection.insert_one(record)
 
-        return DocumentResponse(
-            id=record["_id"],
-            doc_id=record["doc_id"],
-            filename=record["filename"],
-            case_id=record["case_id"],
-            client_id=record["client_id"],
-            description=record["description"],
-            user_id=record["user_id"],
-            uploaded_at=record["uploaded_at"],
-        )
+        return {
+            "success": True,
+            "message": "Document uploaded successfully",
+            "data": DocumentResponse(
+                id=record["_id"],
+                doc_id=record["doc_id"],
+                filename=record["filename"],
+                case_id=record["case_id"],
+                client_id=record["client_id"],
+                description=record["description"],
+                user_id=record["user_id"],
+                uploaded_at=record["uploaded_at"],
+            ).dict(),
+        }
 
     except HTTPException as e:
         raise e
@@ -102,7 +106,11 @@ async def get_document(doc_id: str):
             raise HTTPException(status_code=404, detail="Document not found.")
  
         record["id"] = str(record.pop("_id"))
-        return DocumentResponse(**record)
+        return {
+            "success": True,
+            "message": "Document fetched successfully",
+            "data": DocumentResponse(**record).dict(),
+        }
  
     except HTTPException as e:
         raise e
@@ -151,16 +159,20 @@ async def get_documents(filter: Documentfilter):
         docs = []
         for doc in cursor:
             doc["id"] = str(doc.pop("_id"))
-            docs.append(DocumentResponse(**doc))
+            docs.append(DocumentResponse(**doc).dict())
 
         if not docs:
             raise HTTPException(status_code=404, detail="No documents found.")
-        return docs
+        return {
+            "success": True,
+            "message": "Documents fetched successfully",
+            "data": docs,
+        }
 
     except HTTPException as e:
         raise e
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Failed to fetch documents") from e
 
 
 # delete document by doc_id
@@ -185,9 +197,13 @@ async def delete_document(doc_id: str, user_id: str):
         # delete metadata record and all vector chunks from db
         doc_collection.delete_many({"doc_id": doc_id})
 
-        return {"message": f"Document '{record['filename']}' deleted successfully."}
+        return {
+            "success": True,
+            "message": f"Document '{record['filename']}' deleted successfully",
+            "data": None,
+        }
 
     except HTTPException as e:
         raise e
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail="Failed to delete document") from e

@@ -7,7 +7,7 @@ from Controller.doc_controller import *
 router = APIRouter(prefix="/docs", tags=["documents"])
 
 # post documents
-@router.post("/upload", response_model=DocumentResponse, status_code=201)
+@router.post("/upload", status_code=201)
 async def upload_document(
     request: Request,
     file: UploadFile = File(...),
@@ -21,7 +21,7 @@ async def upload_document(
 
 
 # GET /docs/get/{doc_id} — get metadata of a document
-@router.get("/get/{doc_id}", response_model=DocumentResponse)
+@router.get("/get/{doc_id}")
 async def get_document_by_id(doc_id: str):
     return await get_document(doc_id)
 
@@ -33,8 +33,8 @@ async def download_document_by_id(doc_id: str):
 
 # get doc by filter(case_id or client_id)
 @router.get("/get")
-async def get_documents_by_filter(filter: Documentfilter):
-    return await get_documents(filter)
+async def get_documents_by_filter(case_id: Optional[str] = None, client_id: Optional[str] = None):
+    return await get_documents(Documentfilter(case_id=case_id, client_id=client_id))
 
 
 # delete document
